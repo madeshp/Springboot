@@ -1,0 +1,42 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+    }
+}
+apply plugin: 'java'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+repositories {
+    mavenCentral()
+}
+sourceSets.main.java.srcDirs "src/generated-sources/java"
+configurations {
+    jaxb
+}
+dependencies {
+    jaxb (
+            'com.sun.xml.bind:jaxb-xjc:2.2.7',
+            'com.sun.xml.bind:jaxb-impl:2.2.7'
+    )
+}
+task jaxb {
+    System.setProperty('javax.xml.accessExternalSchema', 'all')
+    def jaxbTargetDir = file("src/generated-sources/java")
+    doLast {
+        jaxbTargetDir.mkdirs()
+        ant.taskdef(
+                name: 'xjc',
+                classname: 'com.sun.tools.xjc.XJCTask',
+                classpath: configurations.jaxb.asPath
+        )
+        ant.jaxbTargetDir = jaxbTargetDir
+        ant.xjc(
+                destdir: '${jaxbTargetDir}',
+                package: 'com.roytuts.jaxb',
+                schema: 'src/main/resources/xsd/shiporder.xsd'
+        )
+    }
+}
+compileJava.dependsOn jaxb

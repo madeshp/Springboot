@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <property name="APP_NAME" value="RestWihtJPA" />
+    <property name="BASE_LOG_FOLDER" value="${LOG_PATH}" />
+
+    <property name="LOG_FOLDER" value="${BASE_LOG_FOLDER}/${APP_NAME}" />
+    <property name="LOG_APP_NAME" value="${APP_NAME}-${spring.profiles.active}" />
+    <property name="LOG_APP_NAME_SPLUNK" value="${APP_NAME}_app" />
+
+    <!-- ####################################### -->
+    <!-- Console appender -->
+    <!-- ####################################### -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{trackingID}] %logger{36}:%line - %msg%n%rEx{full, org, sun, java.lang.reflect}
+            </Pattern>
+        </encoder>
+    </appender>
+    <!-- ####################################### -->
+    <!-- Log File appender -->
+    <!-- ####################################### -->
+    <appender name="ROLLING-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FOLDER}/${LOG_APP_NAME}.log</file>
+        <encoder>
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{trackingID}] %logger{36}:%line - %msg%n%rEx{full, org, sun, java.lang.reflect}
+            </Pattern>
+        </encoder>
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FOLDER}/${LOG_APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- Max file size, per file -->
+            <maxFileSize>100MB</maxFileSize>
+            <!-- Number of days to keep file for history -->
+            <maxHistory>10</maxHistory>
+            <!-- Total archive file size (all combined) should not exceed this size -->
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+
+    </appender>
+    <appender name="ASYNC-ROLLING-FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!--  Max capacity of blocking queue -->
+        <queueSize>3000</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <!-- Set 0 to not discard any events -->
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="ROLLING-FILE" />
+    </appender>
+
+    <!-- ####################################### -->
+    <!-- Log File appender -->
+    <!-- ####################################### -->
+    <appender name="SPLUNK-ROLLING-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FOLDER}/${LOG_APP_NAME_SPLUNK}.log</file>
+        <encoder>
+            <Pattern>
+                %msg%n%rEx{full, org, sun, java.lang.reflect}
+            </Pattern>
+        </encoder>
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FOLDER}/${LOG_APP_NAME_SPLUNK}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- Max file size, per file -->
+            <maxFileSize>100MB</maxFileSize>
+            <!-- Number of days to keep file for history -->
+            <maxHistory>10</maxHistory>
+            <!-- Total archive file size (all combined) should not exceed this size -->
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+
+    </appender>
+    <appender name="SPLUNK-ASYNC-ROLLING-FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!--  Max capacity of blocking queue -->
+        <queueSize>3000</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <!-- Set 0 to not discard any events -->
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="SPLUNK-ROLLING-FILE" />
+    </appender>
+
+    <!-- ####################################### -->
+    <!-- Loggers  -->
+    <!-- ####################################### -->
+
+    <!-- DEV and QA -->
+    <springProfile
+            name="default,dev">
+
+        <logger name="com.springboot.learning" level="INFO"
+                additivity="false">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+            <appender-ref ref="STDOUT" />
+        </logger>
+
+        <logger name="com.springboot.learning" level="DEBUG" additivity="false">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+            <appender-ref ref="STDOUT" />
+        </logger>
+
+        <logger name="com.springboot.learning" level="ERROR" additivity="false">
+            <appender-ref ref="SPLUNK-ASYNC-ROLLING-FILE" />
+            <appender-ref ref="STDOUT" />
+        </logger>
+
+        <root level="INFO">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+            <appender-ref ref="STDOUT" />
+        </root>
+
+</springProfile>
+
+    <!-- PT
+    <springProfile name="pt">
+
+        <logger name="org.springframework" level="info"
+            additivity="false">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+        </logger>
+
+        <logger name="com.cvshealth" level="info" additivity="false">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+        </logger>
+
+        <logger name="SplunkLogger" level="error" additivity="false">
+            <appender-ref ref="SPLUNK-ASYNC-ROLLING-FILE" />
+        </logger>
+
+        <root level="error">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+        </root>
+
+    </springProfile>
+
+    BETA,PROD -->
+    <!--<springProfile
+        name="beta,betaeast,betawest,prod,prodeast,prodwest">
+
+        <logger name="org.springframework" level="error"
+            additivity="false">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+        </logger>
+
+        <logger name="com.cvshealth" level="error" additivity="false">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+        </logger>
+
+        <logger name="SplunkLogger" level="error" additivity="false">
+            <appender-ref ref="SPLUNK-ASYNC-ROLLING-FILE" />
+        </logger>
+
+        <root level="error">
+            <appender-ref ref="ASYNC-ROLLING-FILE" />
+        </root>
+
+    </springProfile>	 -->
+
+</configuration>

@@ -1,0 +1,116 @@
+plugins {
+    id 'org.springframework.boot' version '2.2.1.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+    id 'io.freefair.lombok' version "4.1.5"
+    id 'java'
+    id 'jacoco'
+}
+
+group = 'RestWithJPA'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    // https://mvnrepository.com/artifact/io.swagger/swagger-core
+    implementation group: 'io.swagger', name: 'swagger-core', version: '1.5.24'
+    implementation 'io.springfox:springfox-swagger2:2.4.0'
+    implementation 'io.springfox:springfox-swagger-ui:2.4.0'
+    implementation 'mysql:mysql-connector-java:8.0.18'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    implementation('org.springframework.boot:spring-boot-starter-data-jpa')
+    implementation('com.fasterxml.jackson.datatype:jackson-datatype-jsr310')
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    implementation('org.springframework.boot:spring-boot-starter-validation')
+    implementation 'org.slf4j:jul-to-slf4j'
+    implementation 'org.slf4j:log4j-over-slf4j'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+    testAnnotationProcessor('org.projectlombok:lombok')
+    implementation('ch.qos.logback:logback-classic', 'ch.qos.logback:logback-access', 'ch.qos.logback:logback-core')
+    implementation('org.springframework.boot:spring-boot-actuator')
+    implementation('org.springframework.boot:spring-boot-starter-logging')
+    compile("org.springframework.boot:spring-boot-starter-data-rest")
+    compile 'org.springframework.data:spring-data-rest-hal-explorer'
+    // unit Testing depedancies
+    testCompile "org.assertj:assertj-core:2.6.0"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.1'
+    testCompile 'org.mockito:mockito-junit-jupiter:2.23.0'
+    //integration testing for mocking DB repository
+    testCompile 'com.h2database:h2'
+    //File utils
+    testCompile 'commons-io:commons-io:2.5'
+    // Google utility
+    testImplementation(group: 'com.google.guava', name: 'guava', version: '28.0-jre')
+    // Json xpath reader
+    testImplementation 'com.jayway.jsonpath:json-path:2.4.0'
+}
+test {
+    useJUnitPlatform() // tell Gradle to use the new JUnit Platform for running tests:
+    ignoreFailures = true
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nTest result: ${result.resultType}"
+            println "Test summary: ${result.testCount} tests, " +
+                    "${result.successfulTestCount} succeeded, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped"
+        }
+    }
+}
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+// ********* Jacoco related configuration********************
+jacoco {
+    toolVersion = "0.8.5"
+    reportsDir = file("$buildDir/customJacocoReportDir") //default directory where jacoco generates test reports
+
+}
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoHtml")
+    }
+    jar {
+        enabled = true
+
+    }
+    afterEvaluate {
+        // this can be used to exclude the particualr pacakge(like JAXB generated classes)
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: 'com/springboot/learning/lombok')
+        }))
+    }
+}
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.3
+            }
+            excludes = [
+                    'com.springboot.learning.DataRest',
+                    'com.springboot.learning.exception',
+                    'com.springboot.learning.lombok'
+            ]
+        }
+    }
+}
+// to run coverage verification during the build (and fail when appropr
+//test.dependsOn jacocoTestCoverageVerification
+//This means that at the end of the test task the jacocoTestReport task should be run. You will receive your coverage analysis after run the test
+//test.finalizedBy(project.tasks.jacocoTestReport)
+//*************************************************************
+
